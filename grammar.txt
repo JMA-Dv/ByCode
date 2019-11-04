@@ -1,0 +1,19 @@
+expr : KEYWORD:VAR IDENTIFIER EQUALS expr
+     :comparation-expression ((KEYWORD: AND | OR) comparation-expression)*
+     
+comparation-expression : NOT comparation-expression
+                       :arithmetical-expression ((EQUALSEQUALS|LESSTHAN|LESS THAN EQUALS| GREATER THAN EQUALS) arithmetical-expression)*
+     
+
+arithmetical-expression : term((PLIS|MINUS) term)*
+     
+
+term : factor ((MUL|DIV) factor)*
+
+factor : INT|FLOAT
+        : (+|-) factor
+        ( expr )
+expo: atom (POW  factor)*
+
+atom : (+|- | IDENTIFIER)
+     : ( expr )
