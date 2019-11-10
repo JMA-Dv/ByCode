@@ -29,4 +29,4 @@ class TokenType():
 
 
 
-    KEYWORDS = ['VAR', 'AND', 'NOT', 'OR']
+    KEYWORDS = ['VAR', 'AND', 'NOT', 'OR','IF','ELSE','ELIF','THEN']

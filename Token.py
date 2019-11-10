@@ -1,16 +1,19 @@
-from Position import Position
+#from Position import Position
 class Token:
         def __init__(self,type_, value=None, position_start=None,position_end=None):
             self.token_type = type_
             self.token_value = value
-        
-            #print('Position start ', str(position_start))
+            print('Position start ', str(position_start))
+            print('type ', type(type_))
+            print('valueS ', type(value))
+            #for ar in dir(position_start):
+                   #print(ar,getattr(position_start,ar))
         
             if position_start:
                 
                 self.position_start=position_start.copy()
                 #for ar in dir(position_start):
-                 #   print(ar,getattr(position_start,ar))
+                   #print(ar,getattr(position_start,ar))
                     
                 self.position_end=position_start.copy()
                 self.position_end.advance()

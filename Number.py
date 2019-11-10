@@ -72,6 +72,8 @@ class Number:
         if isinstance(other,Number):
             return Number(int(self.value or other.value)).set_context(self.context),None
 
+    def is_true(self):
+        return self.value != 0
     
     def copy(self):
         copy = Number(self.value)

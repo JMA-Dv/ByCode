@@ -1,3 +1,4 @@
+from IfNode import IfNode
 from TokenType import TokenType
 from NumberNode import NumberNode
 from BinaryOperationNode import BinaryOperationNode
@@ -59,6 +60,12 @@ class Parser:
 					"Expected ')'"
 				))
 
+		elif token.matches(TokenType.KEYWORD,'IF'):
+			if_expression = result.register(self.if_expression())
+			if result.error: return result
+			return result.success(if_expression)
+
+
 		return result.failure(InvalidSyntaxError(
 			token.positioin_start, token.position_end,
 			"Expected int, float, identifier, '+', '-', '('"
@@ -66,6 +73,65 @@ class Parser:
 
 	def power(self):
 		return self.binary_operation(self.atom, (TokenType.POW, ), self.factor)
+
+
+	def if_expression(self):
+		result = ParseResult()
+		cases = []
+		else_cases = None
+
+		if not self.current_token.matches(TokenType.KEYWORD,'IF'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.positioin_start,self.current_token.position_end,
+				f"Expected 'IF'"
+			))
+
+		result.register_advancement()
+		self.advance()
+
+		condition = result.register(self.expression())
+		if result.error: return result
+
+		if not self.current_token.matches(TokenType.KEYWORD,'THEN'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.positioin_start,self.current_token.positioin_end,
+				f"Expected 'THEN' KEYWORD"
+			))
+		
+		result.register_advancement()
+		self.advance()
+
+		expression = result.register(self.expression())
+		if result.error: return result
+		cases.append((condition,expression))
+
+		while self.current_token.matches(TokenType.KEYWORD,'ELIF'):
+			result.register_advancement()
+			self.advance()
+
+			condition = result.register(self.expression())
+			if result.error: return result 
+
+			if not self.current_token.matches(TokenType.KEYWORD,'THEN'):
+				return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,self.current_token.positioin_end,
+					f"Expected 'THEN'"
+				))
+			
+			result.register_advancement()
+			self.advance()
+			expression = result.register(self.expression())
+			if result.error: return result
+			cases.append((condition,expression))
+
+		if self.current_token.matches(TokenType.KEYWORD,'ELSE'):
+			result.register_advancement()
+			self.advance()
+
+			else_cases = result.register(self.expression())
+			if result.error: return result
+
+		return result.success(IfNode(cases,else_cases))
 
 
 	def factor(self):

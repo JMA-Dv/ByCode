@@ -17,3 +17,11 @@ expo: atom (POW  factor)*
 
 atom : (+|- | IDENTIFIER)
      : ( expr )
+
+
+
+if-expression : KEYWORD: IF expression KEYWORD: THEN  expression
+                (KEYWORD:ELIF expression KEYWORD: THEN expression)*
+                (KEYWORD: ELSE expression)?
+
+
