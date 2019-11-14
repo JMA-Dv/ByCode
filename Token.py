@@ -3,9 +3,9 @@ class Token:
         def __init__(self,type_, value=None, position_start=None,position_end=None):
             self.token_type = type_
             self.token_value = value
-            print('Position start ', str(position_start))
-            print('type ', type(type_))
-            print('valueS ', type(value))
+            #print('Position start ', str(position_start))
+            #print('type ', type(type_))
+            #print('valueS ', type(value))
             #for ar in dir(position_start):
                    #print(ar,getattr(position_start,ar))
         

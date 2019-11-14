@@ -10,7 +10,7 @@ class Interpreter:
         return method(node, context)
 
     def no_visit_method(self, node, context):
-        raise Exception(f'No visit_{type(node).__name__} method defined')
+         raise Exception(f'No visit_{type(node).__name__} method defined')
 
     ###################################
 
@@ -55,7 +55,7 @@ class Interpreter:
         elif node.operation_token.token_type == TokenType.MINUS:
             result, error = left.subbed_by(right)
         elif node.operation_token.token_type == TokenType.MUL:
-            result, error = left.multed_by(right)
+            result, error = left.multiplied_by(right)
         elif node.operation_token.token_type == TokenType.DIV:
             result, error = left.dived_by(right)
         elif node.operation_token.token_type == TokenType.POW:
@@ -82,7 +82,7 @@ class Interpreter:
         else:
             return response.success(result.set_position(node.position_start, node.position_end))
 
-    def visit_UnaryOpNode(self, node, context):
+    def visit_UnaryOperationNode(self, node, context):
         response = RunTimeResult()
         number = response.register(self.visit(node.node, context))
         if response.error: return response
@@ -90,7 +90,7 @@ class Interpreter:
         error = None
 
         if node.operation_token.token_type == TokenType.MINUS:
-            number, error = number.multed_by(Number(-1))
+            number, error = number.multiplied_by(Number(-1))
         elif node.operation_token.matches(TokenType.KEYWORD, 'NOT'):
             number, error = number.notted()
 
@@ -116,5 +116,56 @@ class Interpreter:
             if result.error: return result
             return result.success(else_value)
 
-        return result.sucess(None)
+        return result.success(None)
  
+    def visit_ForNode(self,node,context):
+        result = RunTimeResult()
+
+        start_value = result.register(self.visit(node.start_value_node,context))
+        if result.error: return result
+
+        end_value = result.register(self.visit(node.end_value_node,context))
+        if result.error: return result
+
+        
+        if node.step_value_node:
+            step_value = result.register(self.visit(node.step_value_node,context))
+            if result.error: return result
+        else:
+            step_value = Number(1)
+
+        i =  start_value.value#watch this
+
+        if step_value.value >= 0:
+            condition = lambda: i < end_value.value
+        else:
+            condition = lambda: i > end_value.value
+
+        while condition():
+            context.symbol_table.set(node.variable_name_token.token_value,Number(i))
+            i += step_value.value
+
+            result.register(self.visit(node.body_node,context))
+            if result.error: return result
+
+        return result.success(None)
+            
+
+    def visit_WhileNode(self,node,context):
+        result = RunTimeResult()
+
+        while True:
+            condition = result.register(self.visit(node.condition,context))
+            if result.error: return result
+
+            if not condition.is_true():break
+
+            result.register(self.visit(node.body_node,context))
+            if result.error: return result
+
+        return result.success(None)
+
+
+
+
+

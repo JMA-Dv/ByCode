@@ -1,3 +1,5 @@
+from ForNode import ForNode
+from WhileNode import WhileNode
 from IfNode import IfNode
 from TokenType import TokenType
 from NumberNode import NumberNode
@@ -64,6 +66,16 @@ class Parser:
 			if_expression = result.register(self.if_expression())
 			if result.error: return result
 			return result.success(if_expression)
+
+		elif token.matches(TokenType.KEYWORD,'FOR'):
+			for_expression = result.register(self.for_expression())
+			if result.error: return result
+			return result.success(for_expression)
+
+		elif token.matches(TokenType.KEYWORD,'WHILE'):
+			while_expression = result.register(self.while_expression())
+			if result.error: return result
+			return result.success(while_expression)
 
 
 		return result.failure(InvalidSyntaxError(
@@ -230,3 +242,119 @@ class Parser:
 			left = BinaryOperationNode(left, operator_token, right)
 
 		return result.success(left)
+
+	def for_expression(self):
+		result = ParseResult()
+		if not self.current_token.matches(TokenType.KEYWORD,'FOR'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected 'FOR' structure"
+			))
+
+		result.register_advancement()
+		self.advance()
+		if self.current_token.token_type != TokenType.IDENTIFIER:
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected identifier"
+			))
+		variable_name = self.current_token
+		result.register_advancement()
+		self.advance()
+
+		if self.current_token.token_type != TokenType.EQUALS:
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected '=' Token "
+			))
+		result.register_advancement()
+		self.advance()
+
+		start_value = result.register(self.expression())
+		if result.error: return result
+		
+		if not self.current_token.matches(TokenType.KEYWORD,'TO'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected 'TO' KEYWORD "
+			))
+		
+		result.register_advancement()
+		self.advance()
+
+		end_value = result.register(self.expression())
+		if result.error: return result
+
+		if self.current_token.matches(TokenType.KEYWORD,'STEP'):
+			result.register_advancement()
+			self.advance()
+
+			step_value = result.register(self.expression())
+			if result.error: return result
+		else:
+			step_value = None
+
+		if not self.current_token.matches(TokenType.KEYWORD,'THEN'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected 'THEN' KEYWORD "
+			))
+
+
+		result.register_advancement()
+		self.advance()
+
+		body = result.register(self.expression())
+		if result.error:return result
+
+		return result.success(ForNode(variable_name,start_value,end_value,step_value,body))
+
+		
+	def while_expression(self):
+		result = ParseResult()
+
+		if not self.current_token.matches(TokenType.KEYWORD,'WHILE'):
+				return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected 'WHILE' KEYWORD "
+			))
+		result.register_advancement()
+		self.advance()
+
+		condition = result.register(self.expression())
+		if result.error: return result
+
+		if not self.current_token.matches(TokenType.KEYWORD,'THEN'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Expected 'THEN' KEYWORD "
+			))
+
+		result.register_advancement()
+		self.advance()
+
+		body = result.register(self.expression())
+
+		if result.error: return result
+
+		return result.success(WhileNode(condition,body))
+
+
+
+
+
+
+
+
+
+
+
+
+
