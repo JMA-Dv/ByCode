@@ -1,3 +1,5 @@
+from CallNode import CallNode
+from FunctionDefinitionNode import FunctionDefinitionNode
 from ForNode import ForNode
 from WhileNode import WhileNode
 from IfNode import IfNode
@@ -77,15 +79,63 @@ class Parser:
 			if result.error: return result
 			return result.success(while_expression)
 
+		elif token.matches(TokenType.KEYWORD,'FUN'):
+			function_definition = result.register(self.function_definition())
+			if result.error: return result
+			return result.success(function_definition)
+
+
 
 		return result.failure(InvalidSyntaxError(
-			token.positioin_start, token.position_end,
-			"Expected int, float, identifier, '+', '-', '('"
+			token.position_start, token.position_end,
+			"Expected int, float, identifier, '+', '-', '(' 'IF', 'FOR', 'WHILE','FUN'"
 		))
 
 	def power(self):
-		return self.binary_operation(self.atom, (TokenType.POW, ), self.factor)
+		return self.binary_operation(self.call, (TokenType.POW, ), self.factor)
 
+	def call(self):
+		result = ParseResult()
+		atom = result.register(self.atom())
+		if result.error:return result
+
+		if self.current_token.token_type == TokenType.LPAREN:
+			result.register_advancement()
+			self.advance()
+			argument_nodes = []
+			
+			if self.current_token.token_type == TokenType.RPAREN:
+				result.register_advancement()
+				self.advance()
+			else:
+				argument_nodes.append(result.register(self.expression()))
+				
+				if result.error:
+    					return result.failure(InvalidSyntaxError(
+							self.current_token.positioin_start,
+							self.current_token.position_end,
+							"Expected ')', 'VAR', 'IF,'FOR', 'WHILE', 'FUN', 'INTEGER',FLOAT, 'IDENTIFIER'"
+						))
+
+				while self.current_token.token_type == TokenType.COMMA:
+					result.register_advancement()  
+					self.advance()
+
+					argument_nodes.append(result.register(self.expression()))
+					if result.error: return result
+
+				if self.current_token.token_type != TokenType.RPAREN:
+					return result.failure(InvalidSyntaxError(
+						self.current_token.position_start,
+						self.current_token.positioin_end,
+						f"Expected ',' or ')'"
+					))
+
+				result.register_advancement()
+				self.advance()
+			return result.success(CallNode(atom,argument_nodes))
+		return result.success(atom)
+	
 
 	def if_expression(self):
 		result = ParseResult()
@@ -220,7 +270,7 @@ class Parser:
 		if result.error:
 			return result.failure(InvalidSyntaxError(
 				self.current_token.position_start, self.current_token.position_end,
-				"Expected 'VAR', int, float, identifier, '+', '-', '(' or 'NOT'"
+				"Expected 'VAR','IF', 'FOR', 'WHILE','FUN', int, float, identifier, '+', '-', '(' or 'NOT'"
 			))
 
 		return result.success(node)
@@ -346,15 +396,115 @@ class Parser:
 
 		return result.success(WhileNode(condition,body))
 
+	def function_definition(self):
+		result = ParseResult()
 
+		if not self.current_token.matches(TokenType.KEYWORD,'FUN'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,self.current_token.position_end,
+				f"Expecrted 'FUN'"
+			))
 
+		result.register_advancement()
+		self.advance()
 
+		if self.current_token.token_type == TokenType.IDENTIFIER:
+			variable_name = self.current_token
+			result.result_advancement()
+			self.advance()
+			if self.current_token.token_type != TokenType.LPAREN:
+				return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,self.current_token.position_end,
+					f"Expected '('"
+				))
 
+	def function_definition(self):
+		result = ParseResult()
 
+		if not self.current_token.matches(TokenType.KEYWORD,'FUN'):
+			return result.failure(InvalidSyntaxError(
+				self.current_token.position_start,
+				self.current_token.position_end,
+				f"Espected 'FUN' token"
+			))
+		result.register_advancement()
+		self.advance()
 
+		if self.current_token.token_type == TokenType.IDENTIFIER:
+			variable_name = self.current_token
+			result.register_advancement()
+			self.advance()
+			if self.current_token.token_type  != TokenType.LPAREN:
+				return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,
+					self.current_token.position_end,
+					f"Expected ' ( '"
+				))
 
+		else:
+			variable_name = None
+			if self.current_token.token_type != TokenType.LPAREN:
+				return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,
+					self.current_token.position_end,
+					f"Expected 'IDENTIFIER' or '()'"
+				))
 
+		result.register_advancement()
+		self.advance()
+		arguments_name_token = []
 
+		if self.current_token.token_type == TokenType.IDENTIFIER:
+			arguments_name_token.append(self.current_token)
+			self.advance()
 
+			while self.current_token.token_type == TokenType.COMMA:
+				result.register_advancement()
+				self.advance()
 
+				if self.current_token.token_type != TokenType.IDENTIFIER:
+					return result.failure(InvalidSyntaxError(
+						self.current_token.position_start,
+						self.current_token.position_end,
+						f"Expected identifier"
+					))
 
+			arguments_name_token.append(self.current_token)
+			result.register_advancement()
+			self.advance()
+
+			if self.current_token.token_type != TokenType.RPAREN:
+				return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,
+					self.current_token.position_end,
+					f"Expected ',' or ')' token"
+				))
+
+		else:
+			if self.current_token.token_type != TokenType.RPAREN:
+				return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,
+					self.current_token.position_end,
+					f"Expected 'IDENTIFIER' or ')'"
+				))
+
+		result.register_advancement()
+		self.advance()
+
+		if self.current_token.token_type != TokenType.ARROW:
+			return result.failure(InvalidSyntaxError(
+					self.current_token.position_start,
+					self.current_token.position_end,
+					f"Expected ' -> ' symbol"
+			))
+
+		result.register_advancement()
+		self.advance()
+		node_to_return = result.register(self.expression())
+		if result.error: return result
+
+		return result.success(FunctionDefinitionNode(
+			variable_name,
+			arguments_name_token,
+			node_to_return 
+		))

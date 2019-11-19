@@ -17,6 +17,10 @@ expo: atom (POW  factor)*
 
 atom : (+|- | IDENTIFIER)
      : ( expr )
+     :if-expression
+     :for-expression
+     :while-expression
+     :funcion-expression
 
 
 //structures
@@ -35,3 +39,9 @@ ej: FOR i = 0 TO 10 THEN result = result*1
 WHILE <condition> THEN <expression>
 
 while-expression: KEYWORD:WHILE expression KEYWORD:THEN expression  
+
+
+funcion-definition  :KEYWORD:FUN IDENTIFIER?
+                    :LPAREN (IDENTIFIER ( COMMA IDENTIFIER)*)? RPAREN
+                    ARROW expression
+rule

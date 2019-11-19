@@ -1,9 +1,13 @@
+from Function import Function
 from RunTimeResult import RunTimeResult
 from TokenType import TokenType
 from Number import Number
 from RunTimeError import RunTimeError
 #refactored
 class Interpreter:
+    def __init__(self):
+        pass
+
     def visit(self, node, context):
         method_name = f'visit_{type(node).__name__}'
         method = getattr(self, method_name, self.no_visit_method)
@@ -150,6 +154,39 @@ class Interpreter:
 
         return result.success(None)
             
+    def visit_FunctionDefinitionNode(self,node,context):
+        result = RunTimeResult()
+
+        function_name = node.variable_name.token_value if node.variable_name else None
+        body_node = node.body_node
+        argument_names = [argument_name.token_value for argument_name in node.argument_name]
+        function_value = Function(function_name,body_node,argument_names).set_context(context).set_position(node.position_start,node.position_end)
+
+        if node.variable_name:
+            context.symbol_table.set(function_name,function_value)
+
+        return result.success(function_value)
+
+    def visit_CallNode(self,node,context):
+        result = RunTimeResult()
+        arguments = []
+
+        value_to_call = result.register(self.visit(node.node_to_call,context))
+        if result.error: return result
+
+        value_to_call = value_to_call.copy().set_position(node.position_start,node.position_start)
+
+        for argument_node in node.arguments_node:
+            arguments.append(result.register(self.visit(argument_node,context)))
+            if result.error: return result
+
+        return_value = result.register(value_to_call.execute(arguments))
+        if result.error: return result
+        return result.success(return_value)
+
+
+
+
 
     def visit_WhileNode(self,node,context):
         result = RunTimeResult()
@@ -164,8 +201,3 @@ class Interpreter:
             if result.error: return result
 
         return result.success(None)
-
-
-
-
-
